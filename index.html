@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Aura Flow - Advanced React-based task organizer featuring Kanban boards, calendar timelines, and an integrated Pomodoro focus timer." />
+    <meta name="color-scheme" content="light dark">
+    <!-- Inline FOUC prevention: apply stored theme before first paint -->
+    <script>
+      {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'dark') {
+          document.querySelector('meta[name="color-scheme"]').content = 'dark';
+          document.documentElement.classList.add('dark');
+        } else if (theme === 'light') {
+          document.querySelector('meta[name="color-scheme"]').content = 'light';
+        }
+      }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <title>Aura Flow | Advanced Task Organizer & Focus Timer</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
