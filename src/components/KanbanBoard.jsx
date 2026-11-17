@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Pencil, Trash2 } from 'lucide-react';
+import { moveStatus } from '../lib/tasks';
 
 const COLUMNS = [
   { id: 'todo', title: 'To Do' },
@@ -22,11 +23,9 @@ export default function KanbanBoard({ todos, onToggleStatus, onEdit, onDelete })
   const getTasksByStatus = (status) => todos.filter((t) => t.status === status);
 
   const moveTask = (taskId, currentStatus, direction) => {
-    const statusOrder = ['todo', 'in_progress', 'review', 'done'];
-    const currentIndex = statusOrder.indexOf(currentStatus);
-    const newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
-    if (newIndex >= 0 && newIndex < statusOrder.length) {
-      onToggleStatus(taskId, statusOrder[newIndex]);
+    const next = moveStatus(currentStatus, direction); // null at either end of the board
+    if (next) {
+      onToggleStatus(taskId, next);
     }
   };
 

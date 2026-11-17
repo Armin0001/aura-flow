@@ -1,29 +1,41 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Timer, CheckCircle, Flame } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Play, Pause, RotateCcw, SkipForward, Timer, Flame } from 'lucide-react';
+import { MODE_SECONDS, formatClock, nextMode } from '../lib/focus';
 
 export default function FocusTimer({ activeTask, onCompleteFocusSession }) {
   const [mode, setMode] = useState('work'); // 'work', 'shortBreak', 'longBreak'
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [timeLeft, setTimeLeft] = useState(MODE_SECONDS.work);
   const [isRunning, setIsRunning] = useState(false);
   const [streak, setStreak] = useState(0);
-  
+
   const timerRef = useRef(null);
 
-  const modeTimes = {
-    work: 25 * 60,
-    shortBreak: 5 * 60,
-    longBreak: 15 * 60,
+  // A new mode always starts from a full, paused clock. Setting all three together (rather than in an
+  // effect that watches `mode`) saves a render. Picking the mode you're already in changes nothing.
+  const switchMode = (next) => {
+    if (next === mode) return;
+    setMode(next);
+    setTimeLeft(MODE_SECONDS[next]);
+    setIsRunning(false);
   };
 
+  const handleTimerComplete = () => {
+    const sessions = mode === 'work' ? streak + 1 : streak;
+    if (mode === 'work') {
+      setStreak(sessions);
+      if (activeTask && onCompleteFocusSession) {
+        onCompleteFocusSession(activeTask.id);
+      }
+    }
+    // Focus is followed by a break (a long one every fourth session); a break by focus.
+    switchMode(nextMode(mode, sessions));
+  };
+
+  // The interval below is created once per run, so it calls the latest handler through a ref.
   const onCompleteRef = useRef(null);
   useEffect(() => {
     onCompleteRef.current = handleTimerComplete;
   });
-
-  useEffect(() => {
-    setTimeLeft(modeTimes[mode]);
-    setIsRunning(false);
-  }, [mode]);
 
   useEffect(() => {
     if (isRunning) {
@@ -47,27 +59,13 @@ export default function FocusTimer({ activeTask, onCompleteFocusSession }) {
     return () => clearInterval(timerRef.current);
   }, [isRunning, mode]);
 
-  const handleTimerComplete = () => {
-    if (mode === 'work') {
-      const nextStreak = streak + 1;
-      setStreak(nextStreak);
-      if (activeTask && onCompleteFocusSession) {
-        onCompleteFocusSession(activeTask.id);
-      }
-      // Switch to break automatically
-      setMode(nextStreak % 4 === 0 ? 'longBreak' : 'shortBreak');
-    } else {
-      setMode('work');
-    }
-  };
-
   const toggleTimer = () => {
     setIsRunning(!isRunning);
   };
 
   const resetTimer = () => {
     setIsRunning(false);
-    setTimeLeft(modeTimes[mode]);
+    setTimeLeft(MODE_SECONDS[mode]);
   };
 
   const skipTimer = () => {
@@ -75,13 +73,7 @@ export default function FocusTimer({ activeTask, onCompleteFocusSession }) {
     handleTimerComplete();
   };
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const totalDuration = modeTimes[mode];
+  const totalDuration = MODE_SECONDS[mode];
   const progressPercentage = ((totalDuration - timeLeft) / totalDuration) * 100;
 
   return (
@@ -107,7 +99,7 @@ export default function FocusTimer({ activeTask, onCompleteFocusSession }) {
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setMode(item.id)}
+              onClick={() => switchMode(item.id)}
               className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all duration-300 ${
                 mode === item.id 
                   ? `${item.color} shadow-sm border` 
@@ -150,7 +142,7 @@ export default function FocusTimer({ activeTask, onCompleteFocusSession }) {
           {/* Time Text */}
           <div className="absolute flex flex-col items-center">
             <span className="text-4xl font-extrabold tracking-tight text-slate-800 dark:text-white font-mono">
-              {formatTime(timeLeft)}
+              {formatClock(timeLeft)}
             </span>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase font-bold tracking-wider">
               {isRunning ? 'Productive Time' : 'Paused'}

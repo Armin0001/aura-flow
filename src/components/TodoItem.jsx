@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
-import { 
-  CheckCircle2, Circle, Calendar, Trash2, Edit2, ChevronDown, ChevronUp, 
-  Flame, CheckSquare, Clock, ArrowRight, PlayCircle
+import { useState } from 'react';
+import {
+  CheckCircle2, Circle, Calendar, Trash2, Edit2, ChevronDown, ChevronUp,
+  Flame, CheckSquare
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { dueDateBadge } from '../lib/dates';
+
+const DUE_TONE_CLASSES = {
+  overdue: 'text-rose-400 bg-rose-500/10 border border-rose-500/20',
+  today: 'text-amber-400 bg-amber-500/10 border border-amber-500/20',
+  tomorrow: 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/20',
+  later: 'text-slate-400 bg-slate-800/40 border border-slate-700/20',
+};
 
 export default function TodoItem({ 
   todo, 
@@ -18,7 +26,6 @@ export default function TodoItem({
 
   const completedSubtasks = todo.subtasks?.filter((s) => s.completed).length || 0;
   const totalSubtasks = todo.subtasks?.length || 0;
-  const isSubtaskComplete = totalSubtasks > 0 && completedSubtasks === totalSubtasks;
 
   const handleMainToggle = () => {
     const nextStatus = todo.status === 'done' ? 'todo' : 'done';
@@ -56,26 +63,10 @@ export default function TodoItem({
     }
   };
 
-  // Due Date parsing & class calculation
+  // Due date badge (rules and the local-date parsing live in lib/dates.js)
   const getDueDateLabel = () => {
-    if (!todo.dueDate) return null;
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const due = new Date(todo.dueDate);
-    due.setHours(0,0,0,0);
-    
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-      return { label: `Overdue by ${Math.abs(diffDays)}d`, colorClass: 'text-rose-400 bg-rose-500/10 border border-rose-500/20' };
-    } else if (diffDays === 0) {
-      return { label: 'Due Today', colorClass: 'text-amber-400 bg-amber-500/10 border border-amber-500/20' };
-    } else if (diffDays === 1) {
-      return { label: 'Due Tomorrow', colorClass: 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/20' };
-    } else {
-      return { label: `Due in ${diffDays}d`, colorClass: 'text-slate-400 bg-slate-800/40 border border-slate-700/20' };
-    }
+    const badge = dueDateBadge(todo.dueDate);
+    return badge && { label: badge.label, colorClass: DUE_TONE_CLASSES[badge.tone] };
   };
 
   const dueLabel = getDueDateLabel();

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { buildMonthGrid, toLocalDateString } from '../lib/dates';
 
 export default function CalendarView({ todos, onEdit }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -12,23 +13,10 @@ export default function CalendarView({ todos, onEdit }) {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const getLocalDateString = (d) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const getLocalDateString = toLocalDateString;
 
-  const firstDayIndex = new Date(year, month, 1).getDay();
-  const totalDays = new Date(year, month + 1, 0).getDate();
-
-  const calendarDays = [];
-  for (let i = 0; i < firstDayIndex; i++) {
-    calendarDays.push(null);
-  }
-  for (let day = 1; day <= totalDays; day++) {
-    calendarDays.push(new Date(year, month, day));
-  }
+  // Blank cells up to the first weekday, then one Date per day (tested in lib/dates.test.js).
+  const calendarDays = buildMonthGrid(year, month);
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));

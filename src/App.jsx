@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, ListTodo, LayoutGrid, Calendar, BarChart3, Sun, Moon, 
-  Download, Upload, ShieldAlert, Sparkles, Filter, ArrowUpDown, Trash2, CheckCircle2, X
+import { useState, useEffect } from 'react';
+import {
+  Plus, Search, ListTodo, LayoutGrid, Calendar, Sun, Moon,
+  Download, Upload, Sparkles, Filter, ArrowUpDown, Trash2, CheckCircle2, X
 } from 'lucide-react';
 import FocusTimer from './components/FocusTimer';
 import TodoStats from './components/TodoStats';
@@ -9,6 +9,7 @@ import TodoForm from './components/TodoForm';
 import TodoItem from './components/TodoItem';
 import KanbanBoard from './components/KanbanBoard';
 import CalendarView from './components/CalendarView';
+import { completeFocusSession, filterTodos, sortTodos, toggleSubtask } from './lib/tasks';
 
 // Helper to format Date as YYYY-MM-DD
 const formatDateOffset = (daysOffset) => {
@@ -166,46 +167,12 @@ export default function App() {
 
   // Toggle subtask completion
   const handleToggleSubtask = (todoId, subtaskId) => {
-    setTodos(
-      todos.map((todo) => {
-        if (todo.id !== todoId) return todo;
-        return {
-          ...todo,
-          subtasks: todo.subtasks.map((sub) =>
-            sub.id === subtaskId ? { ...sub, completed: !sub.completed } : sub
-          ),
-        };
-      })
-    );
+    setTodos(todos.map((todo) => (todo.id === todoId ? toggleSubtask(todo, subtaskId) : todo)));
   };
 
-  // Focus Timer complete session callback
+  // Focus Timer complete session callback (rules in lib/tasks.js)
   const handleCompleteFocusSession = (todoId) => {
-    // Optionally mark the task status as 'review' or 'done' or complete first incomplete subtask
-    setTodos(
-      todos.map((todo) => {
-        if (todo.id !== todoId) return todo;
-        
-        // Find first incomplete subtask and complete it
-        const firstIncompleteSubIndex = todo.subtasks.findIndex(s => !s.completed);
-        if (firstIncompleteSubIndex !== -1) {
-          const updatedSubtasks = [...todo.subtasks];
-          updatedSubtasks[firstIncompleteSubIndex] = {
-            ...updatedSubtasks[firstIncompleteSubIndex],
-            completed: true
-          };
-          return { ...todo, subtasks: updatedSubtasks };
-        }
-        
-        // If no subtasks or all done, transition main task status
-        if (todo.status === 'todo') {
-          return { ...todo, status: 'in_progress' };
-        } else if (todo.status === 'in_progress') {
-          return { ...todo, status: 'review' };
-        }
-        return todo;
-      })
-    );
+    setTodos(todos.map((todo) => (todo.id === todoId ? completeFocusSession(todo) : todo)));
   };
 
   // Delete todo
@@ -275,46 +242,18 @@ export default function App() {
           } else {
             alert('Invalid backup file. Must be a JSON array of tasks.');
           }
-        } catch (err) {
+        } catch {
           alert('Error reading file.');
         }
       };
     }
   };
 
-  // Priority mapping values for sorting
-  const priorityValues = { high: 3, medium: 2, low: 1 };
-
-  // Filter and Sort Tasks
-  const filteredTodos = todos
-    .filter((todo) => {
-      const matchesSearch = 
-        todo.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        todo.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = filterStatus === 'all' || todo.status === filterStatus;
-      const matchesCategory = filterCategory === 'all' || todo.category === filterCategory;
-      const matchesPriority = filterPriority === 'all' || todo.priority === filterPriority;
-
-      return matchesSearch && matchesStatus && matchesCategory && matchesPriority;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'dueDate') {
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(a.dueDate) - new Date(b.dueDate);
-      }
-      if (sortBy === 'priority') {
-        return priorityValues[b.priority] - priorityValues[a.priority];
-      }
-      if (sortBy === 'title') {
-        return a.title.localeCompare(b.title);
-      }
-      if (sortBy === 'createdAt') {
-        return new Date(b.createdAt) - new Date(a.createdAt);
-      }
-      return 0;
-    });
+  // Filter and Sort Tasks (rules in lib/tasks.js)
+  const filteredTodos = sortTodos(
+    filterTodos(todos, { query: searchQuery, status: filterStatus, category: filterCategory, priority: filterPriority }),
+    sortBy
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-500 font-sans selection:bg-violet-500/30 selection:text-violet-300 relative overflow-hidden pb-12">
@@ -428,6 +367,7 @@ export default function App() {
             {(showAddForm || editingTodo) && (
               <div className="animate-fadeIn">
                 <TodoForm
+                  key={editingTodo ? editingTodo.id : 'new'}
                   onSubmit={handleFormSubmit}
                   initialTodo={editingTodo}
                   onCancel={() => {

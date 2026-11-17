@@ -1,36 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, X, Calendar, Flag, Tag, CheckSquare, Layers } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, X, Calendar, Flag, Tag, CheckSquare } from 'lucide-react';
 
 const CATEGORIES = ['Work', 'Personal', 'Study', 'Fitness', 'Shopping', 'Finance'];
 
+// The form reads initialTodo once, when it mounts. App keys it by task id, so editing another task
+// mounts a fresh form, which replaces an effect that copied the props into state after every render.
 export default function TodoForm({ onSubmit, initialTodo = null, onCancel }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Work');
-  const [customCategory, setCustomCategory] = useState('');
-  const [showCustomCat, setShowCustomCat] = useState(false);
-  const [priority, setPriority] = useState('medium');
-  const [dueDate, setDueDate] = useState('');
-  const [subtasks, setSubtasks] = useState([]);
+  const presetCategory = !initialTodo || CATEGORIES.includes(initialTodo.category);
+  const [title, setTitle] = useState(initialTodo?.title || '');
+  const [description, setDescription] = useState(initialTodo?.description || '');
+  const [category, setCategory] = useState(!initialTodo ? 'Work' : presetCategory ? initialTodo.category : 'Custom');
+  const [customCategory, setCustomCategory] = useState(presetCategory ? '' : initialTodo.category || '');
+  const [showCustomCat, setShowCustomCat] = useState(!presetCategory);
+  const [priority, setPriority] = useState(initialTodo?.priority || 'medium');
+  const [dueDate, setDueDate] = useState(initialTodo?.dueDate || '');
+  const [subtasks, setSubtasks] = useState(initialTodo?.subtasks || []);
   const [subtaskInput, setSubtaskInput] = useState('');
-
-  useEffect(() => {
-    if (initialTodo) {
-      setTitle(initialTodo.title || '');
-      setDescription(initialTodo.description || '');
-      if (CATEGORIES.includes(initialTodo.category)) {
-        setCategory(initialTodo.category);
-        setShowCustomCat(false);
-      } else {
-        setCategory('Custom');
-        setCustomCategory(initialTodo.category || '');
-        setShowCustomCat(true);
-      }
-      setPriority(initialTodo.priority || 'medium');
-      setDueDate(initialTodo.dueDate || '');
-      setSubtasks(initialTodo.subtasks || []);
-    }
-  }, [initialTodo]);
 
   const handleAddSubtask = (e) => {
     e.preventDefault();

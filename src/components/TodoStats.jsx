@@ -1,29 +1,18 @@
-import React from 'react';
-import { CheckCircle2, Circle, Clock, AlertTriangle, Layers, Percent, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
+import { getTaskStats } from '../lib/tasks';
 
 export default function TodoStats({ todos }) {
-  const total = todos.length;
-  const completed = todos.filter((t) => t.status === 'done').length;
-  const inProgress = todos.filter((t) => t.status === 'in_progress').length;
-  const review = todos.filter((t) => t.status === 'review').length;
-  const todoCount = todos.filter((t) => t.status === 'todo').length;
-
-  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-  // Priority counts
-  const highPriority = todos.filter((t) => t.priority === 'high' && t.status !== 'done').length;
-  const medPriority = todos.filter((t) => t.priority === 'medium' && t.status !== 'done').length;
-  const lowPriority = todos.filter((t) => t.priority === 'low' && t.status !== 'done').length;
-
-  // Category counts
-  const categoryCounts = todos.reduce((acc, curr) => {
-    if (curr.status !== 'done') {
-      acc[curr.category] = (acc[curr.category] || 0) + 1;
-    }
-    return acc;
-  }, {});
-
-  const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0];
+  // The numbers come from lib/tasks.js, where they are unit tested.
+  const {
+    total,
+    completed,
+    inProgress,
+    review,
+    todo: todoCount,
+    completionRate,
+    openByPriority: { high: highPriority, medium: medPriority, low: lowPriority },
+    topCategory,
+  } = getTaskStats(todos);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
@@ -122,7 +111,7 @@ export default function TodoStats({ todos }) {
         {topCategory && (
           <div className="mt-2 pt-2 border-t border-slate-300 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">
             <span>Top Area:</span>
-            <span className="text-violet-600 dark:text-violet-300 font-bold truncate max-w-[80px]">{topCategory[0]}</span>
+            <span className="text-violet-600 dark:text-violet-300 font-bold truncate max-w-[80px]">{topCategory.name}</span>
           </div>
         )}
       </div>
